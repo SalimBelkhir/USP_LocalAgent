@@ -1,0 +1,234 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <amxc/amxc.h>
+#include <amxp/amxp.h>
+#include <amxd/amxd.h>
+#include <amxo/amxo.h>
+
+#define UNUSED __attribute__((unused))
+
+typedef struct _cpu_state {
+	uint64_t user;
+	uint64_t nice;
+	uint64_t system;
+	uint64_t idle;
+	uint64_t iowait;
+	uint64_t irq;
+	uint64_t softirq;
+} cpu_state_t;
+
+
+static int read_os_release_field(const char* key,char* buf,size_t len) {
+	if(len > INT_MAX){
+		fclose(fp);
+		return -1;
+	}
+
+	FILE* fp = fopen("/etc/os-release","r");
+	if(fp == NULL)
+		return -1;
+	char line[256];
+	size_t key_len = strlen(key);
+	int found = -1;
+
+	while(fgets(line,len,fp) != NULL) {
+		if(strncmp(line,key,key_len)== 0 && line[key_len] == '=') {
+			char* value = line + key_len + 1;
+			if(*value == '"')
+				value++;
+			size_t vlen = strlen(value);
+			if(vlen > 0 && value[vlen-1] == '\n') { value[--vlen] = '\0'; }
+            		if(vlen > 0 && value[vlen-1] == '"')  { value[--vlen] = '\0'; }
+
+            		strncpy(buf, value, len - 1);
+           		buf[len - 1] = '\0';
+            		found = 0;
+           		break;
+		}
+	}
+	
+	fclose(fp);
+	return found;
+}
+
+amxd_status_t _get_end_point_id(amxd_object_t* object,
+				amxd_param_t* param,
+			      	amxd_action_t reason,
+				const amxc_var_t *const args,
+				amxc_var_t* const retval,
+				void* priv)
+{
+	amxd_status_t status = amxd_status_unknown_error;
+
+	if(reason != action_param_read){
+		status = amxd_status_function_not_implemented;
+		goto exit;
+	}
+
+	status = amxd_action_param_read(object,param,reason,args,retval,priv);
+	if(status != amxd_status_ok)
+		goto exit;
+
+	amxc_var_set(cstring_t,retval,"os::prpl:rpi-001");
+	status = amxd_status_ok;
+
+exit:
+	return status;
+}
+
+amxd_status_t _get_software_ver(amxd_object_t* object,
+				amxd_param_t* param,
+				amxd_action_t reason,
+				const amxc_var_t* const args,
+				amxc_var_t* const retval,
+				void* priv)
+{
+	amxd_status_t status = amxd_status_unknown_error;
+	char buf[64] = {0};
+
+	if(reason != action_param_read){
+		status = amxd_status_function_not_implemented;
+		goto exit;
+	}
+
+	status = amxd_action_param_read(object,param,reason,args,retval,priv);
+        if(status != amxd_status_ok)
+                goto exit;
+	
+	if(read_os_release_field("VERSION_ID",buf,sizeof(buf)) == 0) {
+		amxc_var_set(cstring_t,retval,buf);
+		status = amxd_status_ok;
+		goto exit;
+	}else {
+		status = amxd_status_invalid_value;
+		goto exit;
+	}
+exit:
+	return status;
+}
+
+
+amxd_status_t _get_uptime(amxd_object_t* object,
+                          amxd_param_t* param,
+                          amxd_action_t reason,
+                          const amxc_var_t* const args,
+                          amxc_var_t* const retval,
+                          void* priv)
+{
+	amxd_status_t status = amxd_status_unknown_error;
+	FILE *fp = NULL; 
+	double uptime_s = 0.0;
+
+	if(reason != action_param_read){
+                status = amxd_status_function_not_implemented;
+                goto exit;
+        }
+
+        status = amxd_action_param_read(object,param,reason,args,retval,priv);
+        if(status != amxd_status_ok)
+                goto exit;
+
+	fp = fopen("/proc/uptime","r");
+
+	if(fp == NULL) {
+                amxc_var_set(uint32_t,retval,0);
+		status = amxd_status_unknown_error;
+                goto exit;
+	}
+
+	if(fscanf(fp,"%lf",&uptime_s) != 1 ) {
+		amxc_var_set(uint32_t,retval,0);
+		status = amxd_status_unknown_error;
+		goto exit;
+	}
+
+	amxc_var_set(uint32,retval,(uint32_t)uptime_s);
+	status = amxd_status_ok;
+	
+exit:
+	if(fp != NULL)
+	    fclose(fp);
+	return status;
+}
+
+static void cpu_info_fill_usage_data(cpu_usage_t* data, char* line, size_t len) {
+    amxc_string_t str_line;
+    amxc_var_t parts;
+    uint32_t index = 0;
+    uint64_t* fields[7];
+    fields[0] = &data->user;
+    fields[1] = &data->nice;
+    fields[2] = &data->system;
+    fields[3] = &data->idle;
+    fields[4] = &data->iowait;
+    fields[5] = &data->irq;
+    fields[6] = &data->softirq;
+
+    amxc_var_init(&parts);
+    amxc_string_init(&str_line, 0);
+    amxc_string_push_buffer(&str_line, line, len);
+
+    amxc_string_split(&str_line, &parts, NULL, NULL);
+
+    amxc_var_for_each(part, (&parts)) {
+        *fields[index] = amxc_var_dyncast(uint64_t, part);
+        index++;
+        if(index > 6) {
+            break;
+        }
+    }
+
+    amxc_string_take_buffer(&str_line);
+    amxc_var_clean(&parts);
+    amxc_string_clean(&str_line);
+}
+
+static char* cpu_info_build_key(int32_t id) {
+    char* retval = NULL;
+    amxc_string_t key;
+    amxc_string_init(&key, 16);
+
+    if(id < 0) {
+        amxc_string_setf(&key, "cpu");
+    } else {
+        amxc_string_setf(&key, "cpu%d", id);
+    }
+    retval = amxc_string_take_buffer(&key);
+
+    amxc_string_clean(&key);
+    return retval;
+}
+
+static int _read_cpu_stat(cpu_stat_t* stat,int32_t cpu_id)
+{
+	int ret = -1;
+	FILE* fp;
+	ssize_t read = 0;
+	char* line = NULL;
+	size_t len = 0;
+	char* key = cpu_info_build_key(cpu_id);
+	size_t key_len = strlen(key);
+	fp = fopen("/proc/stat","r");
+	if(fp == NULL)
+		goto exit;
+	
+	read = getline(&line,&len,fp);
+	while(read != -1){
+		if(strncmp(key,line,key_len)==0)
+			break;
+		read = getline(&line,&len,fp);
+	}
+	cpu_info_fill_usage_data(stat,line+key_len,len-key_len);
+	ret = 0;
+
+exit:
+	if(fp != NULL)
+		fclose(fp);
+	free(key);
+	free(line);
+	return ret;
+}
+

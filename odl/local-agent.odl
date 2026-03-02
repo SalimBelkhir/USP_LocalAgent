@@ -1,0 +1,121 @@
+%define {
+    object Device {
+        object LocalAgent {
+            %read-only string EndpointID {
+		on action read call get_end_point_id;
+	    }
+            %read-only string SoftwareVersion{
+		on action read call get_software_ver;
+	    }
+            %read-only string Manufacturer;
+            %read-only string ModelName;
+            %read-only string SerialNumber;
+            bool Enable = true;
+            %read-only string SupportedProtocols = "MQTT";
+
+            object MTP[] {
+                counted with MTPNumberOfEntries;
+                bool Enable = true;
+                string Protocol = "MQTT";
+                %read-only string Status;
+
+                object MQTT {
+                    string Reference;
+                    string ResponseTopicConfigured;
+                }
+            }
+
+            object Subscription[] {
+                counted with SubscriptionNumberOfEntries;
+                %unique %key string Alias;
+                bool Enable;
+                %key string Recipient;
+                %key string ID;
+                string TriggerAction = "Notify" {
+                    on action validate call
+                        check_enum ["Notify", "Config", "NotifyAndConfig"];
+                }
+                csv_string ReferenceList;
+                uint32 TimeToLive;
+                bool Persistent;
+            }
+
+            object Controller[] {
+                counted with ControllerNumberOfEntries;
+                %unique %key string Alias;
+                %unique %key string EndpointID;
+                bool Enable;
+                string ControllerCode;
+
+                object MTP[] {
+                    counted with MTPNumberOfEntries;
+                    bool Enable;
+                    string Protocol = "MQTT";
+
+                    object MQTT {
+                        string Reference;
+                        string Topic;
+                    }
+                }
+            }
+        }
+
+        object MQTT {
+            object Client[] {
+                counted with ClientNumberOfEntries;
+                bool Enable;
+                string BrokerAddress;
+                uint32 BrokerPort = 8883;
+                string ClientID;
+                string Username;
+                string Password;
+                string ProtocolVersion = "5.0";
+                string TransportProtocol = "TCP";
+                uint32 KeepAliveTime = 60;
+                %read-only string Status;
+
+                object TLS {
+                    bool Enable = true;
+                    string CACertificate;
+                    string ClientCertificate;
+                    string PrivateKey;
+                }
+            }
+        }
+
+        object DeviceInfo {
+            %read-only string Manufacturer;
+            %read-only string ModelName;
+            %read-only string SerialNumber;
+            %read-only string SoftwareVersion;
+            %read-only uint32 UpTime {
+		on action read call get_uptime;
+	    }
+
+            object ProcessStatus {
+                %read-only uint32 CPUUsage {
+		    on action read call get_cpu_usage;
+		}
+                %read-only uint32 MemoryTotal{
+		    on action read call get_memory_total;
+		}
+                %read-only uint32 MemoryFree{
+		    on action read call get_memory_free;
+		}
+            }
+        }
+    }
+}
+
+%populate {
+    object "Device.LocalAgent" {
+        parameter EndpointID = "os::prpl:rpi-001";
+        parameter SoftwareVersion = "1.0.0";
+        parameter Manufacturer = "Raspberry Pi Foundation";
+        parameter ModelName = "Raspberry Pi 4";
+    }
+
+    on event "dm:instance-added" call la_subscription_added
+        filter 'path == "Device.LocalAgent.Subscription."';
+}
+
