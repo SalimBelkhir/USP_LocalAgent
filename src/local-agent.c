@@ -68,7 +68,7 @@ static int read_os_release_field(const char* key,char* buf,size_t len) {
 
 amxd_status_t _get_end_point_id(amxd_object_t* object,
 				amxd_param_t* param,
-			      	amxd_action_t reason,
+			    amxd_action_t reason,
 				const amxc_var_t *const args,
 				amxc_var_t* const retval,
 				void* priv)
@@ -76,13 +76,13 @@ amxd_status_t _get_end_point_id(amxd_object_t* object,
 	amxd_status_t status = amxd_status_unknown_error;
 
 	if(reason != action_param_read){
-		status = amxd_status_function_not_implemented;
-		goto exit;
+		    status = amxd_status_function_not_implemented;
+		    goto exit;
 	}
 
 	status = amxd_action_param_read(object,param,reason,args,retval,priv);
 	if(status != amxd_status_ok)
-		goto exit;
+		    goto exit;
 
 	amxc_var_set(cstring_t,retval,"os::prpl:rpi-001");
 	status = amxd_status_ok;
@@ -102,21 +102,21 @@ amxd_status_t _get_software_ver(amxd_object_t* object,
 	char buf[64] = {0};
 
 	if(reason != action_param_read){
-		status = amxd_status_function_not_implemented;
-		goto exit;
+		    status = amxd_status_function_not_implemented;
+		    goto exit;
 	}
 
 	status = amxd_action_param_read(object,param,reason,args,retval,priv);
-        if(status != amxd_status_ok)
-                goto exit;
+    if(status != amxd_status_ok)
+            goto exit;
 	
 	if(read_os_release_field("VERSION_ID",buf,sizeof(buf)) == 0) {
-		amxc_var_set(cstring_t,retval,buf);
-		status = amxd_status_ok;
-		goto exit;
+		    amxc_var_set(cstring_t,retval,buf);
+		    status = amxd_status_ok;
+		    goto exit;
 	}else {
-		status = amxd_status_invalid_value;
-		goto exit;
+		    status = amxd_status_invalid_value;
+		    goto exit;
 	}
 exit:
 	return status;
@@ -139,8 +139,8 @@ amxd_status_t _get_uptime(amxd_object_t* object,
                 goto exit;
         }
 
-        status = amxd_action_param_read(object,param,reason,args,retval,priv);
-        if(status != amxd_status_ok)
+    status = amxd_action_param_read(object,param,reason,args,retval,priv);
+    if(status != amxd_status_ok)
                 goto exit;
 
 	fp = fopen("/proc/uptime","r");
@@ -326,7 +326,7 @@ amxd_status_t _get_memory_total(amxd_object_t *object,
 				void *priv)
 {
         amxd_status_t status = amxd_status_unknown_error;
-	mem_info_t m = {0};
+	    mem_info_t m = {0};
         if(reason != action_param_read){
                 status = amxd_status_function_not_implemented;
                 goto exit;
@@ -352,16 +352,16 @@ amxd_status_t _get_memory_free(amxd_object_t *object,
                                 amxc_var_t *const retval,
                                 void *priv)
 {
-        amxd_status_t status = amxd_status_unknown_error;
-        mem_info_t m = {0};
-        if(reason != action_param_read){
-                status = amxd_status_function_not_implemented;
-                goto exit;
-        }
+    amxd_status_t status = amxd_status_unknown_error;
+    mem_info_t m = {0};
+    if(reason != action_param_read){
+            status = amxd_status_function_not_implemented;
+            goto exit;
+    }
 
-        status = amxd_action_param_read(object, param, reason, args, retval, priv);
-        if(status != amxd_status_ok)
-                goto exit;
+    status = amxd_action_param_read(object, param, reason, args, retval, priv);
+    if(status != amxd_status_ok)
+            goto exit;
 
 	if (read_mem_info(&m) == -1 )
 	       	goto exit;
@@ -374,8 +374,8 @@ exit:
 }
 
 static void on_watched_path_changed(const char* const sig_name,
-				    const amxc_var_t* const data,
-				    void* const priv) {
+									const amxc_var_t* const data,
+				    				void* const priv) {
 	const char* recipient = (const char*)priv;
 	const char* path = NULL ;
 	amxc_var_t* var_path = amxc_var_get_key(data,"path",AMXC_VAR_FLAG_DEFAULT);
@@ -444,20 +444,20 @@ void _la_subscription_added(UNUSED const char* const sig_name,
 	
 	//reading parameter from instance
 	autodelete amxc_var_t* enable_var;
-    	autodelete amxc_var_t* recipient_var;
-    	autodelete amxc_var_t* reflist_var;
-    	autodelete amxc_var_t* id_var;
-    	autodelete amxc_var_t* ttl_var;
-    	autodelete amxc_var_t* persistent_var;
-    	autodelete amxc_var_t* trigger_action_var;
+    autodelete amxc_var_t* recipient_var;
+    autodelete amxc_var_t* reflist_var;
+    autodelete amxc_var_t* id_var;
+    autodelete amxc_var_t* ttl_var;
+    autodelete amxc_var_t* persistent_var;
+    autodelete amxc_var_t* trigger_action_var;
 
    	amxc_var_new(&enable_var);
-    	amxc_var_new(&recipient_var);
-    	amxc_var_new(&reflist_var);
-    	amxc_var_new(&id_var);
-    	amxc_var_new(&ttl_var);
-    	amxc_var_new(&persistent_var);
-    	amxc_var_new(&trigger_action_var);
+    amxc_var_new(&recipient_var);
+    amxc_var_new(&reflist_var);
+    amxc_var_new(&id_var);
+    amxc_var_new(&ttl_var);
+    amxc_var_new(&persistent_var);
+    amxc_var_new(&trigger_action_var);
 
 
 	amxd_object_get_param(inst,"Enable",enable_var);
@@ -471,50 +471,50 @@ void _la_subscription_added(UNUSED const char* const sig_name,
 	bool enable = amxc_var_constcast(bool, enable_var);
 	bool persistent = amxc_var_constcast(bool,persistent_var);
 
-        if(!enable){
-	       	printf("[USP] Subscription.%u is disabled, skipping\n", index);
+    if(!enable){
+	    printf("[USP] Subscription.%u is disabled, skipping\n", index);
 		return;
 	}
 	if(!persistent){
-	       	printf("[USP] Subscription.%u is not persistet, skipping\n",index);
+	    printf("[USP] Subscription.%u is not persistet, skipping\n",index);
 		return;
 	}
 
-        const char* recipient  = amxc_var_constcast(cstring_t, recipient_var);
-        const char* reflist    = amxc_var_constcast(cstring_t, reflist_var);
+    const char* recipient  = amxc_var_constcast(cstring_t, recipient_var);
+    const char* reflist    = amxc_var_constcast(cstring_t, reflist_var);
 	const char* id         = amxc_var_constcast(cstring_t, id_var);
-        const uint32_t ttl     = amxc_var_constcast(uint32_t,ttl_var);
+    const uint32_t ttl     = amxc_var_constcast(uint32_t,ttl_var);
 	const char* trigger_action = amxc_var_constcast(cstring_t, trigger_action_var);	
 
 	if (ttl == 0) printf("[USP] TimeToLive invalide value\n");
 
 	if(trigger_action == NULL ||
    	       (strcmp(trigger_action, "Notify") != 0 &&
-    	        strcmp(trigger_action, "Config") != 0 &&
-                strcmp(trigger_action, "NotifyAndConfig") != 0)) {
-                printf("[USP] Subscription.%u trigger action is invalid\n", index);
-                return;
+    	    strcmp(trigger_action, "Config") != 0 &&
+            strcmp(trigger_action, "NotifyAndConfig") != 0)) {
+            printf("[USP] Subscription.%u trigger action is invalid\n", index);
+            return;
         }
 
 	printf("[USP] Subscription.%u added\n", index);
-        printf("  Recipient    : %s\n", recipient ? recipient : "(none)");
-        printf("  ReferenceList: %s\n", reflist   ? reflist   : "(none)");
+    printf("  Recipient    : %s\n", recipient ? recipient : "(none)");
+    printf("  ReferenceList: %s\n", reflist   ? reflist   : "(none)");
 	printf("  ID           :%s\n", id ? id : "(none)");	
 
 	if(reflist == NULL || *reflist == '\0') {
         	printf("[USP] ReferenceList is empty, nothing to watch\n");
-		return;
-        }
+			return;
+    }
 
 	if(recipient == NULL) {
-                printf("[USP] recipient is NULL, skipping\n");
-                return;
-        }
-        char* recipient_copy = strdup(recipient);
+    		printf("[USP] recipient is NULL, skipping\n");
+            return;
+    }
+    char* recipient_copy = strdup(recipient);
 
-        if(recipient_copy == NULL) {
-                printf("[USP] strdup failed, skipping\n");
-                return;
+    if(recipient_copy == NULL) {
+            printf("[USP] strdup failed, skipping\n");
+            return;
         }
 
 
@@ -530,7 +530,7 @@ void _la_subscription_added(UNUSED const char* const sig_name,
 		amxc_string_t* path_str = amxc_container_of(it,amxc_string_t,it);
 		//amxc_string_t is a typedef struct not a simple type
 		amxc_string_trim(path_str,NULL);
-	        const char* watch_path = amxc_string_get(path_str,0);
+	    const char* watch_path = amxc_string_get(path_str,0);
 
 		if(watch_path == NULL || *watch_path == '\0')
 			continue;
